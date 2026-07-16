@@ -1,0 +1,48 @@
+import os
+import pandas as pd
+
+DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
+
+
+def load_dataset() -> pd.DataFrame:
+    fake_path = os.path.join(DATA_DIR, "Fake.csv")
+    true_path = os.path.join(DATA_DIR, "True.csv")
+    sample_path = os.path.join(DATA_DIR, "sample_data.csv")
+
+    if os.path.exists(fake_path) and os.path.exists(true_path):
+        print("Loading Kaggle Fake.csv / True.csv dataset...")
+        fake_df = pd.read_csv(fake_path)
+        true_df = pd.read_csv(true_path)
+
+        fake_df["label"] = "FAKE"
+        true_df["label"] = "REAL"
+
+        df = pd.concat([fake_df, true_df], ignore_index=True)
+
+        # Combine title + text if both exist, otherwise use whichever is present
+        if "title" in df.columns and "text" in df.columns:
+            df["text"] = df["title"].fillna("") + " " + df["text"].fillna("")
+        elif "title" in df.columns:
+            df["text"] = df["title"].fillna("")
+        # else: assume 'text' column already exists
+
+        df = df[["text", "label"]].dropna()
+        df = df[df["text"].str.strip() != ""]
+
+    elif os.path.exists(sample_path):
+        print("Kaggle dataset not found — loading bundled sample_data.csv demo dataset.")
+        print("(Run 'python src/generate_sample_data.py' first if this file is missing,")
+        print(" or add Fake.csv/True.csv to data/ for a real dataset.)")
+        df = pd.read_csv(sample_path)
+        df = df[["text", "label"]].dropna()
+
+    else:
+        raise FileNotFoundError(
+            "No dataset found. Either:\n"
+            "  1) Run: python src/generate_sample_data.py   (creates a demo dataset), or\n"
+            "  2) Download the Kaggle Fake and Real News Dataset and place\n"
+            "     Fake.csv and True.csv inside the data/ folder."
+        )
+
+    df = df.sample(frac=1, random_state=42).reset_index(drop=True)  # shuffle
+    return df
