@@ -1,0 +1,21 @@
+import re
+
+URL_RE = re.compile(r"https?://\S+|www\.\S+")
+NON_ALPHA_RE = re.compile(r"[^a-zA-Z\s]")
+MULTI_SPACE_RE = re.compile(r"\s+")
+
+
+def clean_text(text: str) -> str:
+    """
+    Lowercases text and strips URLs, punctuation, digits, and extra whitespace.
+    Stopword removal is left to TfidfVectorizer(stop_words='english') at the
+    vectorization step, so this function stays fast and dependency-free.
+    """
+    if not isinstance(text, str):
+        return ""
+
+    text = text.lower()
+    text = URL_RE.sub(" ", text)
+    text = NON_ALPHA_RE.sub(" ", text)
+    text = MULTI_SPACE_RE.sub(" ", text).strip()
+    return text
