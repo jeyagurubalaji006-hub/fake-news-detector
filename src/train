@@ -1,0 +1,54 @@
+import os
+import joblib
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+from data_loader import load_dataset
+from preprocess import clean_text
+
+MODELS_DIR = os.path.join(os.path.dirname(__file__), "..", "models")
+
+
+def main():
+    df = load_dataset()
+    print(f"Loaded {len(df)} rows. Label distribution:\n{df['label'].value_counts()}\n")
+
+    print("Cleaning text...")
+    df["clean_text"] = df["text"].apply(clean_text)
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        df["clean_text"], df["label"], test_size=0.2, random_state=42, stratify=df["label"]
+    )
+
+    print("Vectorizing with TF-IDF...")
+    vectorizer = TfidfVectorizer(
+        stop_words="english",
+        max_df=0.7,      # drop terms that appear in >70% of documents (too common to be useful)
+        ngram_range=(1, 2),
+    )
+    X_train_tfidf = vectorizer.fit_transform(X_train)
+    X_test_tfidf = vectorizer.transform(X_test)
+
+    print("Training LogisticRegression classifier...")
+    model = LogisticRegression(max_iter=1000, random_state=42)
+    model.fit(X_train_tfidf, y_train)
+
+    y_pred = model.predict(X_test_tfidf)
+    accuracy = accuracy_score(y_test, y_pred)
+
+    print(f"\nTest accuracy: {accuracy * 100:.2f}%\n")
+    print("Classification report:")
+    print(classification_report(y_test, y_pred))
+    print("Confusion matrix (rows=actual, cols=predicted), labels order:", model.classes_)
+    print(confusion_matrix(y_test, y_pred, labels=model.classes_))
+
+    os.makedirs(MODELS_DIR, exist_ok=True)
+    joblib.dump(model, os.path.join(MODELS_DIR, "fake_news_model.joblib"))
+    joblib.dump(vectorizer, os.path.join(MODELS_DIR, "tfidf_vectorizer.joblib"))
+    print(f"\nSaved model + vectorizer to {MODELS_DIR}/")
+
+
+if __name__ == "__main__":
+    main()
