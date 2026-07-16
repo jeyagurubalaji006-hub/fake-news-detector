@@ -1,0 +1,62 @@
+import sys
+import os
+import joblib
+
+from preprocess import clean_text
+
+MODELS_DIR = os.path.join(os.path.dirname(__file__), "..", "models")
+
+
+def load_artifacts():
+    model_path = os.path.join(MODELS_DIR, "fake_news_model.joblib")
+    vectorizer_path = os.path.join(MODELS_DIR, "tfidf_vectorizer.joblib")
+
+    if not os.path.exists(model_path) or not os.path.exists(vectorizer_path):
+        raise FileNotFoundError(
+            "No trained model found. Run 'python src/train.py' first."
+        )
+
+    model = joblib.load(model_path)
+    vectorizer = joblib.load(vectorizer_path)
+    return model, vectorizer
+
+
+def predict(text: str, model, vectorizer) -> dict:
+    cleaned = clean_text(text)
+    features = vectorizer.transform([cleaned])
+
+    prediction = model.predict(features)[0]
+
+    probabilities = model.predict_proba(features)[0]
+    class_index = list(model.classes_).index(prediction)
+    confidence = probabilities[class_index]
+
+    return {
+        "prediction": prediction,
+        "confidence": round(float(confidence) * 100, 2),
+    }
+
+
+def main():
+    model, vectorizer = load_artifacts()
+
+    if len(sys.argv) > 1:
+        text = " ".join(sys.argv[1:])
+        result = predict(text, model, vectorizer)
+        print(f"\nPrediction: {result['prediction']}  (confidence: {result['confidence']}%)")
+    else:
+        print("Enter article text (or press Ctrl+C to quit):")
+        while True:
+            try:
+                text = input("\n> ")
+                if not text.strip():
+                    continue
+                result = predict(text, model, vectorizer)
+                print(f"Prediction: {result['prediction']}  (confidence: {result['confidence']}%)")
+            except KeyboardInterrupt:
+                print("\nGoodbye.")
+                break
+
+
+if __name__ == "__main__":
+    main()
