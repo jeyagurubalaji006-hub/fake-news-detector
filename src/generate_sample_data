@@ -1,0 +1,98 @@
+import csv
+import random
+import os
+
+random.seed(42)
+
+TOPICS = [
+    "the economy", "a new vaccine", "the local election", "climate policy",
+    "a tech company merger", "a celebrity", "the national budget",
+    "a sports championship", "a school district", "a public health study",
+    "a government agency", "an energy project", "a university research team",
+    "a stock market rally", "a natural disaster response", "a trade agreement",
+]
+
+PEOPLE = [
+    "Dr. Sarah Chen", "Senator Mark Ellis", "Professor James Lee",
+    "Mayor Linda Torres", "Officer Ray Patel", "Governor Wei Zhang",
+    "Dr. Amara Okafor", "Minister Tom Becker",
+]
+
+CITIES = ["Springfield", "Riverside", "Oakdale", "Fairview", "Millbrook", "Cedar Falls"]
+
+# ---------- REAL news templates: neutral, attributed, specific ----------
+REAL_TEMPLATES = [
+    "Officials in {city} confirmed on Tuesday that {topic} will be reviewed after a report from the city council. "
+    "{person} said the findings would be published next month and that public comment would be welcomed.",
+    "According to a study published this week, {topic} showed measurable changes over the past year. "
+    "Researchers, including {person}, noted that further data collection is planned before drawing final conclusions.",
+    "The {city} city council voted 6-2 on Thursday to move forward with {topic}, following months of public hearings. "
+    "{person} stated that the decision reflects input gathered from residents over the past year.",
+    "A report released by local authorities in {city} outlines new steps regarding {topic}. "
+    "{person}, who oversaw the review, said implementation would begin in phases starting next quarter.",
+    "Data released this week by the department overseeing {topic} showed a modest increase compared to last year. "
+    "{person} cautioned against drawing broad conclusions from a single year of data.",
+    "Representatives met in {city} on Monday to discuss {topic}, with a follow-up session scheduled for next month. "
+    "{person} said both sides agreed to continue negotiations in good faith.",
+    "The quarterly report on {topic} was released Wednesday, showing results in line with analyst expectations. "
+    "{person} noted the figures were consistent with projections made earlier in the year.",
+    "Health officials in {city} issued updated guidance on {topic} after reviewing recent clinical data. "
+    "{person} emphasized that the guidance may be revised as more evidence becomes available.",
+]
+
+# ---------- FAKE news templates: sensational, vague sourcing, urgency ----------
+FAKE_TEMPLATES = [
+    "SHOCKING: You won't believe what {topic} is really hiding from the public! Sources close to the matter "
+    "say the truth about {topic} has been covered up for YEARS, and {person} refuses to answer questions.",
+    "BREAKING: Secret documents PROVE that {topic} is a total scam designed to control ordinary people. "
+    "Insiders claim {person} has known the truth all along but has stayed silent to protect powerful friends.",
+    "This ONE simple fact about {topic} that {city} officials don't want you to know will change everything. "
+    "Share before this gets deleted! {person} has reportedly been threatened into silence.",
+    "Experts are FURIOUS after leaked messages reveal the real agenda behind {topic}. Critics say {person} "
+    "is part of a hidden plan that mainstream media refuses to report on.",
+    "You won't see this on the news: {topic} is secretly being used to manipulate {city} residents, according "
+    "to anonymous sources. {person} allegedly ordered the cover-up personally.",
+    "WAKE UP: The real story behind {topic} is finally exposed, and it's worse than anyone imagined. "
+    "Government insiders warn that {person} is hiding shocking evidence from the public.",
+    "Unbelievable! A whistleblower claims {topic} was rigged from the start, and {person} has been lying "
+    "to the people of {city} for years. Mainstream media won't touch this story.",
+    "URGENT WARNING: {topic} could be far more dangerous than officials admit. Anonymous insiders say "
+    "{person} is deliberately downplaying the risk to avoid public panic.",
+]
+
+
+def build_rows(templates, label, n_per_template):
+    rows = []
+    for template in templates:
+        for _ in range(n_per_template):
+            text = template.format(
+                topic=random.choice(TOPICS),
+                person=random.choice(PEOPLE),
+                city=random.choice(CITIES),
+            )
+            rows.append((text, label))
+    return rows
+
+
+def main():
+    n_per_template = 12  # 8 templates * 12 = 96 rows per class
+    real_rows = build_rows(REAL_TEMPLATES, "REAL", n_per_template)
+    fake_rows = build_rows(FAKE_TEMPLATES, "FAKE", n_per_template)
+
+    all_rows = real_rows + fake_rows
+    random.shuffle(all_rows)
+
+    out_dir = os.path.join(os.path.dirname(__file__), "..", "data")
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, "sample_data.csv")
+
+    with open(out_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["text", "label"])
+        writer.writerows(all_rows)
+
+    print(f"Generated {len(all_rows)} rows ({len(real_rows)} REAL, {len(fake_rows)} FAKE) -> {out_path}")
+
+
+if __name__ == "__main__":
+    main()
